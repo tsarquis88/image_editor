@@ -1,6 +1,6 @@
 #include "image_editor.hpp"
 
-ImageEditor::ImageEditor()
+ImageEditor::ImageEditor( )
 {
     rain_granularity    =   DEFAULT_RAIN_GRANULARITY;
     bright_step         =   DEFAULT_BRIGHT_STEP;
@@ -8,6 +8,34 @@ ImageEditor::ImageEditor()
     frame_anchor        =   DEFAULT_FRAME_ANCHOR;
     circle_anchor       =   DEFAULT_CIRCLE_ANCHOR;
     kernel_size         =   DEFAULT_KERNEL_SIZE;
+}
+
+int
+ImageEditor::setup( string image_path )
+{    
+    ImageEditor::image_path =   image_path;
+
+    image    =   imread( image_path, IMREAD_COLOR );
+
+    if( image.empty() )
+        return -1;
+    
+    /* Window size configuration */
+    width   =   image.cols;
+    height  =   image.rows;
+    rel     =   ( float ) width / ( float ) height;
+    if( width > MAX_WIDTH )
+    {
+        width   =   MAX_WIDTH;
+        height  =   width / rel;
+    }
+    else if( height > MAX_HEIGHT )
+    {
+        height  =   MAX_HEIGHT;
+        width   =   height * rel;
+    }
+     
+    return 1;
 }
 
 string
@@ -35,11 +63,11 @@ ImageEditor::browse_file()
     else
         filename_str    =   String( filename ).substr( 0, pos - 1 );
 
-    return filename_str;
+    return samples::findFile( filename_str );
 }
 
 void
-ImageEditor::rain_image( Mat *image, int height, int width )
+ImageEditor::rain_image()
 {
     int drops, i, x, y;
 
@@ -50,7 +78,7 @@ ImageEditor::rain_image( Mat *image, int height, int width )
         x   =   rand() % ( width );
         y   =   rand() % ( height );
 
-        drawMarker(	*image,
+        drawMarker(	image,
                     Point( x, y ),
                     Scalar( 0, 0, 0 ),
                     MARKER_CROSS,
@@ -63,19 +91,23 @@ void
 ImageEditor::configure_settings()
 {
     char value[ INPUT_SIZE ];
-    char setting;
+    char setting[ INPUT_SIZE ];
     FILE *file;
     long value_long;
 
-    setting = '\0';
-    value[ 0 ] = '\0';
+    setting[ 0 ] = '\0';
+    value[ 0 ]  = '\0';
     file  = popen( "./configure_settings.sh", "r" );
 
     fgets( value, INPUT_SIZE, file );
-    fgets( &setting, INPUT_SIZE, file );
+    fgets( setting, INPUT_SIZE, file );
+
+    if( setting[ 0 ] == '\0' )   
+        return;
+
     value_long  =   stol( value, NULL, 10 );  ;
 
-    switch( setting )
+    switch( setting[ 0 ] )
     {
         case 'b':
             bright_step = value_long;
@@ -121,9 +153,9 @@ ImageEditor::get_rain_granularity()
 }
 
 void
-ImageEditor::add_frame( Mat *image, int height, int width )
+ImageEditor::add_frame()
 {
-    rectangle(  *image,
+    rectangle(  image,
                 Point( 0, 0 ),
                 Point( width, height ),
                 Scalar( 0, 0, 0 ),
@@ -134,7 +166,7 @@ ImageEditor::add_frame( Mat *image, int height, int width )
 }
 
 void
-ImageEditor::add_circle( Mat *image, int height, int width )
+ImageEditor::add_circle()
 {
     int radius;
 
@@ -145,7 +177,7 @@ ImageEditor::add_circle( Mat *image, int height, int width )
 
     radius  -=  circle_anchor / 2;
 
-    circle(	*image,
+    circle(	image,
             Point( width / 2, height / 2 ),
             radius,
             Scalar( 0, 0, 0 ),
@@ -156,9 +188,9 @@ ImageEditor::add_circle( Mat *image, int height, int width )
 }
 
 void
-ImageEditor::modify_bright( Mat *image, int increase )
+ImageEditor::modify_bright( int increase )
 {
-    image->convertTo(   *image, 
+    image.convertTo(    image, 
                         -1, 
                         1, 
                         increase * bright_step 
@@ -166,17 +198,39 @@ ImageEditor::modify_bright( Mat *image, int increase )
 }
 
 void
-ImageEditor::modify_contrast( Mat *image, int increase )
+ImageEditor::modify_contrast( int increase )
 {
-    image->convertTo(   *image, 
+    image.convertTo(    image, 
                         -1, 
                         increase * contrast_step, 
-                        0
+                        1
     );
 }
 
 void
-ImageEditor::blure( Mat *image )
+ImageEditor::blure()
 {
-    blur( *image, *image, Size( kernel_size, kernel_size ) );
+    blur( image, image, Size( kernel_size, kernel_size ) );
+}
+
+void
+ImageEditor::to_gray_scale()
+{
+    image    =   imread( image_path, IMREAD_GRAYSCALE );
+}
+
+int
+ImageEditor::show_image()
+{
+    namedWindow( WINDOW_NAME, WINDOW_NORMAL );
+    resizeWindow( WINDOW_NAME, width, height );
+    imshow( WINDOW_NAME, image );
+
+    return waitKey( 0 );
+}
+
+void
+ImageEditor::save_image()
+{
+    imwrite( DEFAULT_DESTINATION_PATH, image );
 }

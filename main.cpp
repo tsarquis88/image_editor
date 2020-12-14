@@ -4,104 +4,80 @@ int
 main()
 {
     string img_path; 
-    Mat img, img_orig; 
     uint8_t k;
-    uint32_t width, height;
-    float rel;
     bool exit;
-
-    /* ImageEditor creation */
     ImageEditor image_editor;
 
-    /* Search file */
-    image_search:
-    img_path    =   samples::findFile( image_editor.browse_file() );
-
-    /* Load image */
-    img_orig    =   imread( img_path, IMREAD_COLOR );
-    img_orig.convertTo( img, -1, 1, 0 );
-    if( img.empty() )
+    /* ImageEditor setup */
+    image_setup:
+    img_path    =   ImageEditor::browse_file();
+    if( image_editor.setup( img_path ) == -1 )
     {
-        cout << "Could not read the image: " << img_path << endl;
+        cout << "Could not read the image:" << img_path << endl;
         return 1;
-    }
-
-    /* Window size configuration */
-    width   =   img.cols;
-    height  =   img.rows;
-    rel     =   ( float ) width / ( float ) height;
-    if( width > MAX_WIDTH )
-    {
-        width   =   MAX_WIDTH;
-        height  =   width / rel;
-    }
-    else if( height > MAX_HEIGHT )
-    {
-        height  =   MAX_HEIGHT;
-        width   =   height * rel;
     }
 
     /* Image edition loop */
     do
     {
-        namedWindow( WINDOW_NAME, WINDOW_NORMAL );
-        resizeWindow( WINDOW_NAME, width, height );
-        imshow( WINDOW_NAME, img );
-
-        k = waitKey( 0 ); 
-        exit = false;
+        k       =   image_editor.show_image();
+        exit    =   false;
 
         switch ( k )
         {
             case 'a':
-                image_editor.modify_contrast( &img, 1 );
+                image_editor.modify_contrast( 1 );
                 break;
 
             case 'b':
-                image_editor.modify_contrast( &img, -1 );
+                image_editor.modify_contrast( -1 );
                 break;
             
             case 'c':
-                image_editor.modify_bright( &img, 1 );
+                image_editor.modify_bright( 1 );
                 break;
 
             case 'd':
-                image_editor.modify_bright( &img, -1 );
+                image_editor.modify_bright( -1 );
                 break;
 
             case 'e':
-                image_editor.blure( &img );
+                image_editor.blure();
                 break;
 
-            case 'i':
-                image_editor.add_circle( &img, img.rows, img.cols );
+            case 'f':
+                image_editor.add_circle();
                 break;
 
-            case 'k':
-                image_editor.add_frame( &img, img.rows, img.cols );
+            case 'g':
+                image_editor.add_frame();
                 break;
 
-            case 'l':
-                image_editor.rain_image( &img, img.rows, img.cols );
+            case 'h':
+                image_editor.rain_image();
                 break;
             
-            case 'm':
+            case 'i':
                 image_editor.configure_settings();
                 break;
 
+            case 'j':
+                image_editor.to_gray_scale();
+                break;
+
             case 'o':
-                goto image_search;
+                goto image_setup;
                 
             case 'q':
                 exit = true;
                 break;
 
             case 'r':
-                img_orig.convertTo( img, -1, 1, 0 );
+                image_editor.setup( img_path );
                 break;
 
             case 's':
-                imwrite( DEFAULT_DESTINATION_PATH, img );
+                image_editor.save_image();
                 break;
 
             default:
