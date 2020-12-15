@@ -8,11 +8,14 @@ ImageEditor::ImageEditor( )
     frame_anchor        =   DEFAULT_FRAME_ANCHOR;
     circle_anchor       =   DEFAULT_CIRCLE_ANCHOR;
     kernel_size         =   DEFAULT_KERNEL_SIZE;
+    red_step            =   DEFAULT_RED_STEP;
 }
 
 int
 ImageEditor::setup( string image_path )
 {    
+    int width, height, rel;
+
     ImageEditor::image_path =   image_path;
 
     image    =   imread( image_path, IMREAD_COLOR );
@@ -71,12 +74,12 @@ ImageEditor::rain_image()
 {
     int drops, i, x, y;
 
-    drops   =   height * width / rain_granularity;
+    drops   =   image.rows * image.cols / rain_granularity;
 
     for( i = 0; i < drops; i++ )
     {
-        x   =   rand() % ( width );
-        y   =   rand() % ( height );
+        x   =   rand() % ( image.cols );
+        y   =   rand() % ( image.rows );
 
         drawMarker(	image,
                     Point( x, y ),
@@ -134,30 +137,12 @@ ImageEditor::configure_settings()
     }
 }
 
-int
-ImageEditor::get_bright_step()
-{
-    return bright_step;
-}
-
-int
-ImageEditor::get_contrast_step()
-{
-    return contrast_step;
-}
-
-int
-ImageEditor::get_rain_granularity()
-{
-    return rain_granularity;
-}
-
 void
 ImageEditor::add_frame()
 {
     rectangle(  image,
                 Point( 0, 0 ),
-                Point( width, height ),
+                Point( image.cols, image.rows ),
                 Scalar( 0, 0, 0 ),
                 frame_anchor,
                 LINE_8,
@@ -170,15 +155,15 @@ ImageEditor::add_circle()
 {
     int radius;
 
-    if( height < width )
-        radius  =   height / 2;
+    if( image.rows < image.cols )
+        radius  =   image.rows / 2;
     else
-        radius  =   width / 2;
+        radius  =   image.cols / 2;
 
     radius  -=  circle_anchor / 2;
 
     circle(	image,
-            Point( width / 2, height / 2 ),
+            Point( image.cols / 2, image.rows / 2 ),
             radius,
             Scalar( 0, 0, 0 ),
             circle_anchor,
@@ -208,7 +193,7 @@ ImageEditor::modify_contrast( int increase )
 }
 
 void
-ImageEditor::blure()
+ImageEditor::blure_image()
 {
     blur( image, image, Size( kernel_size, kernel_size ) );
 }
@@ -223,7 +208,7 @@ int
 ImageEditor::show_image()
 {
     namedWindow( WINDOW_NAME, WINDOW_NORMAL );
-    resizeWindow( WINDOW_NAME, width, height );
+    resizeWindow( WINDOW_NAME, image.cols, image.rows );
     imshow( WINDOW_NAME, image );
 
     return waitKey( 0 );
@@ -233,4 +218,61 @@ void
 ImageEditor::save_image()
 {
     imwrite( DEFAULT_DESTINATION_PATH, image );
+}
+
+void
+ImageEditor::modify_red( int increase )
+{
+    long i;
+    int aux;
+
+    for( i = 2; i < image.rows * image.cols * 3; i += 3 )
+    {
+        aux = image.data[ i ] + red_step * increase;
+
+        if( aux < 0 )
+            aux =  0;
+        else if( aux > 255 )
+            aux =  255;
+
+        image.data[ i ] = aux;        
+    }
+}
+
+void
+ImageEditor::modify_blue( int increase )
+{
+    long i;
+    int aux;
+
+    for( i = 0; i < image.rows * image.cols * 3; i += 3 )
+    {
+        aux = image.data[ i ] + red_step * increase;
+
+        if( aux < 0 )
+            aux =  0;
+        else if( aux > 255 )
+            aux =  255;
+
+        image.data[ i ] = aux;        
+    }
+}
+
+void
+ImageEditor::modify_green( int increase )
+{
+    long i;
+    int aux;
+
+    for( i = 1; i < image.rows * image.cols * 3; i += 3 )
+    {
+        aux = image.data[ i ] + red_step * increase;
+
+        if( aux < 0 )
+            aux =  0;
+        else if( aux > 255 )
+            aux =  255;
+
+        image.data[ i ] = aux;        
+    }
 }
